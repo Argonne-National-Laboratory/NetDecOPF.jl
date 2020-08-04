@@ -7,7 +7,7 @@ const DD = DualDecomposition
 sub_optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
 optimizer = optimizer_with_attributes(Gurobi.Optimizer, "OutputFlag" => 0)
 
-file = "/home/weiqizhang/.julia/dev/DeNet/examples/case5.m"
+file = "./examples/case5.m"
 data = parse_file(file)
 partitions = [[2, 3, 4], [1, 5]]
 # dn_model = decompose(data, partitions, ACRPowerModel, DeNet.build_acopf_with_free_lines)
