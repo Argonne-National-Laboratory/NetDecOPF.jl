@@ -109,7 +109,7 @@ version = "0.8.2"
 
 [[DualDecomposition]]
 deps = ["BundleMethod", "JuMP", "MPI", "SparseArrays"]
-git-tree-sha1 = "d0a426cccdfefc1049bef8c9a6a5469bc203354e"
+path = "/home/weiqizhang/.julia/dev/DualDecomposition"
 uuid = "d0e446f1-e135-48f1-a6ea-e9a6190f2a7a"
 version = "0.1.0"
 
