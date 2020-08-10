@@ -6,9 +6,10 @@ function decompose(
     N_gs::Vector{Vector{Int64}},
     modeltype::Type{T},
     build_function::Function;
+    extra_ref_extensions=[]
     )::DeNetModel where T <: PM.AbstractPowerModel
 
-    return decompose(data, [Set(i) for i in N_gs], modeltype, build_function)
+    return decompose(data, [Set(i) for i in N_gs], modeltype, build_function, extra_ref_extensions = extra_ref_extensions)
 end
 
 function decompose(
@@ -16,6 +17,7 @@ function decompose(
     N_gs::Vector{Set{Int64}},
     modeltype::Type{T},
     build_function::Function;
+    extra_ref_extensions=[]
     )::DeNetModel where T <: PM.AbstractPowerModel
 
     models = T[]
@@ -23,16 +25,16 @@ function decompose(
     for i in eachindex(N_gs)
         N_g = N_gs[i]
         sub_data = generate_subnet_data(data, N_g)
-        push!(models, instantiate_model(sub_data, modeltype, build_function, ref_extensions = [ref_add_cut_bus!, ref_add_cut_branch!]))
+        push!(models, instantiate_model(sub_data, modeltype, build_function, ref_extensions = push!([ref_add_cut_bus!, ref_add_cut_branch!], extra_ref_extensions...)))
         shared_vars_dict[i] = collect_split_vars(models[i])
     end
 
     return DeNetModel(N_gs, models, shared_vars_dict)
 end
 
-# modified from original build_opf_bf
+# modified from original build_opf
 # get rid of ref buses and apply power balance to only nodes in partition
-function build_opf_mod(pm::PM.AbstractPowerModel)
+function build_opf_mod(pm::PM.ACRPowerModel)
     variable_bus_voltage(pm, bounded=false)
     vr = var(pm, :vr)
     vi = var(pm, :vi)
@@ -63,6 +65,92 @@ function build_opf_mod(pm::PM.AbstractPowerModel)
 
         constraint_thermal_limit_from(pm, i)
         constraint_thermal_limit_to(pm, i)
+    end
+
+    for i in ids(pm, :dcline)
+        constraint_dcline_power_losses(pm, i)
+    end
+end
+
+function build_opf_mod(pm::PM.AbstractPowerModel)
+    variable_bus_voltage(pm)
+    variable_gen_power(pm)
+    variable_branch_power(pm)
+    variable_dcline_power(pm)
+
+    objective_min_fuel_and_flow_cost_mod(pm)
+
+    constraint_model_voltage(pm)
+
+    for i in setdiff(ids(pm, :bus), ids(pm, :cut_bus))
+        constraint_power_balance(pm, i)
+    end
+
+    for i in ids(pm, :branch)
+        constraint_ohms_yt_from(pm, i)
+        constraint_ohms_yt_to(pm, i)
+
+        constraint_voltage_angle_difference(pm, i)
+
+        constraint_thermal_limit_from(pm, i)
+        constraint_thermal_limit_to(pm, i)
+    end
+
+    for i in ids(pm, :dcline)
+        constraint_dcline_power_losses(pm, i)
+    end
+end
+
+
+#=
+function PM.variable_bus_voltage_on_off(pm::PM.AbstractACRModel; kwargs...)
+    variable_bus_voltage(pm; kwargs...)
+end
+
+function PM.constraint_model_voltage_on_off(pm::PM.AbstractACRModel; kwargs...)
+end
+
+function PM.constraint_ohms_yt_from_on_off(pm::AbstractACRModel, n::Int, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
+    p_fr = var(pm, n, :p, f_idx)
+    q_fr = var(pm, n, :q, f_idx)
+    wrr_ff = var(pm, n, :wrr)[f_bus, f_bus]
+    wii_ff = var(pm, n, :wii)[f_bus, f_bus]
+    wrr_ft = var(pm, n, :wrr)[f_bus, t_bus]
+    wii_ft = var(pm, n, :wii)[f_bus, t_bus]
+    wri_ft = var(pm, n, :wri)[f_bus, t_bus]
+    wri_tf = var(pm, n, :wri)[t_bus, f_bus]
+    z = var(pm, n, :z_branch, i)
+
+    JuMP.@constraint(pm.model, p_fr == z * ((g+g_fr)/tm^2*(wrr_ff + wii_ff) + (-g*tr+b*ti)/tm^2*(wrr_ft + wii_ft) + (-b*tr-g*ti)/tm^2*(wri_tf - wri_ft)) )
+    JuMP.@constraint(pm.model, q_fr == z * (-(b+b_fr)/tm^2*(wrr_ff + wii_ff) - (-b*tr-g*ti)/tm^2*(wrr_ft + wii_ft) + (-g*tr+b*ti)/tm^2*(wri_tf - wri_ft)) )
+end
+=#
+
+# modified from original build_ots
+# get rid of ref buses and apply power balance to only nodes in partition
+function build_ots_mod(pm::PM.AbstractPowerModel)
+    variable_branch_indicator(pm)
+    variable_bus_voltage_on_off(pm)
+    variable_gen_power(pm)
+    variable_branch_power(pm)
+    variable_dcline_power(pm)
+
+    objective_min_fuel_and_flow_cost_mod(pm)
+
+    constraint_model_voltage_on_off(pm)
+
+    for i in setdiff(ids(pm, :bus), ids(pm, :cut_bus))
+        constraint_power_balance(pm, i)
+    end
+
+    for i in ids(pm, :branch)
+        constraint_ohms_yt_from_on_off(pm, i)
+        constraint_ohms_yt_to_on_off(pm, i)
+
+        constraint_voltage_angle_difference_on_off(pm, i)
+
+        constraint_thermal_limit_from_on_off(pm, i)
+        constraint_thermal_limit_to_on_off(pm, i)
     end
 
     for i in ids(pm, :dcline)
@@ -173,12 +261,45 @@ function build_acopf_with_free_lines(pm::PM.AbstractPowerModel)
     end
 end
 
+function build_acopf_with_free_lines(pm::SDPWRMPowerModel)
+    build_opf_mod(pm)
+end
+
 function build_socwr_with_free_lines(pm::PM.AbstractWRModel)
     build_opf_mod(pm)
 end
 
 function build_socbf_with_free_lines(pm::PM.AbstractBFModel)
     build_opf_bf_mod(pm)
+end
+
+function build_acots_with_free_lines(pm::PM.AbstractACPModel)
+    build_ots_mod(pm)
+end
+
+# function build_acots_with_free_lines(pm::PM.AbstractACRModel)
+#     variable_w_matrix(pm)
+#     build_ots_mod(pm)
+# end
+
+
+function collect_split_vars(pm::PM.ACPPowerModel)
+    p = var(pm, :p)
+    q = var(pm, :q)
+    z = var(pm, :z_branch)
+    shared_vars_dict = Dict{String, Dict{Tuple, VariableRef}}()
+    shared_vars_dict["z"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    cut_arcs_from = ref(pm, :cut_arcs_from)
+    for (l,i,j) in cut_arcs_from
+        shared_vars_dict["z"][(l,i,j)] = z[l]
+        shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
+        shared_vars_dict["p"][(l,j,i)] = p[(l,j,i)]
+        shared_vars_dict["q"][(l,i,j)] = q[(l,i,j)]
+        shared_vars_dict["q"][(l,j,i)] = q[(l,j,i)]
+    end
+    return shared_vars_dict
 end
 
 function collect_split_vars(pm::PM.ACRPowerModel)
@@ -255,6 +376,33 @@ function collect_split_vars(pm::PM.AbstractBFModel)
         shared_vars_dict["p"][(l,j,i)] = p[(l,j,i)]
         shared_vars_dict["q"][(l,i,j)] = q[(l,i,j)]
         shared_vars_dict["q"][(l,j,i)] = q[(l,j,i)]
+    end
+    return shared_vars_dict
+end
+
+function collect_split_vars(pm::PM.SDPWRMPowerModel)
+    p = var(pm, :p)
+    q = var(pm, :q)
+    WR = var(pm, :WR)
+    WI = var(pm, :WI)
+    bus_ids = ids(pm, :bus)
+    lookup_w_index = Dict((bi,i) for (i,bi) in enumerate(bus_ids))
+
+    shared_vars_dict = Dict{String, Dict{Tuple, VariableRef}}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict["WR"] = Dict{Tuple{Int64, Int64}, VariableRef}()
+    shared_vars_dict["WI"] = Dict{Tuple{Int64, Int64}, VariableRef}()
+    cut_arcs_from = ref(pm, :cut_arcs_from)
+    for (l,i,j) in cut_arcs_from
+        shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
+        shared_vars_dict["p"][(l,j,i)] = p[(l,j,i)]
+        shared_vars_dict["q"][(l,i,j)] = q[(l,i,j)]
+        shared_vars_dict["q"][(l,j,i)] = q[(l,j,i)]
+        shared_vars_dict["WR"][(i,j)] = WR[lookup_w_index[i], lookup_w_index[j]]
+        shared_vars_dict["WI"][(i,j)] = WI[lookup_w_index[i], lookup_w_index[j]]
+        shared_vars_dict["WR"][(j,i)] = WR[lookup_w_index[j], lookup_w_index[i]]
+        shared_vars_dict["WI"][(j,i)] = WI[lookup_w_index[j], lookup_w_index[i]]
     end
     return shared_vars_dict
 end
