@@ -1,4 +1,4 @@
-module DeNet
+module NetDecOPF
 
 # Import necessary packages
 using JuMP
@@ -14,7 +14,7 @@ include("data.jl")
 include("prob.jl")
 include("solution.jl")
 
-export DeNetModel, get_partition, get_models, get_split_vars, set_subnet_optimizer!
+export NetDecModel, get_partition, get_models, get_split_vars, set_subnet_optimizer!
 
 export find_neighbor_buses, generate_subnet_data, ref_add_cut_bus!, ref_add_cut_branch!
 

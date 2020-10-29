@@ -7,7 +7,7 @@ function decompose(
     modeltype::Type{T},
     build_function::Function;
     extra_ref_extensions=[]
-    )::DeNetModel where T <: PM.AbstractPowerModel
+    )::NetDecModel where T <: PM.AbstractPowerModel
 
     return decompose(data, [Set(i) for i in N_gs], modeltype, build_function, extra_ref_extensions = extra_ref_extensions)
 end
@@ -18,7 +18,7 @@ function decompose(
     modeltype::Type{T},
     build_function::Function;
     extra_ref_extensions=[]
-    )::DeNetModel where T <: PM.AbstractPowerModel
+    )::NetDecModel where T <: PM.AbstractPowerModel
 
     models = T[]
     shared_vars_dict = Dict{Int64, Dict}()
@@ -29,7 +29,7 @@ function decompose(
         shared_vars_dict[i] = collect_split_vars(models[i])
     end
 
-    return DeNetModel(N_gs, models, shared_vars_dict)
+    return NetDecModel(N_gs, models, shared_vars_dict)
 end
 
 # modified from original build_opf

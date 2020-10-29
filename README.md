@@ -1,4 +1,4 @@
-# DeNet.jl
+# NetDecOPF.jl
 
 This package implements a network decomposition formulation to solve large-scale optimization problems over power networks, e.g. ACOPF, OTS etc.
 
@@ -7,7 +7,7 @@ This package implements a network decomposition formulation to solve large-scale
 This package can be installed by
 
 ```julia
-] add https://github.com/wzhangw/DeNet.jl.git
+] add https://github.com/Argonne-National-Laboratory/NetDecOPF.jl.git
 ```
 
 ## Acknowledgement

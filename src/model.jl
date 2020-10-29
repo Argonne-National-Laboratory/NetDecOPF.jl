@@ -1,8 +1,8 @@
-mutable struct DeNetModel{T <: PM.AbstractPowerModel}
+mutable struct NetDecModel{T <: PM.AbstractPowerModel}
     node_partition::Vector{Set{Int64}}
     model_list::Vector{T}
     split_line_vars::Dict{Int64, Dict}
-    function DeNetModel(
+    function NetDecModel(
         node_partition::Vector{Set{Int64}},
         model_list::Vector{T} = T[],
         split_line_vars::Dict{Int64, Dict} = Dict{Int64, Dict}()
@@ -11,13 +11,13 @@ mutable struct DeNetModel{T <: PM.AbstractPowerModel}
     end
 end
 
-get_partition(dm_model::DeNetModel)::Vector{Set{Int64}} = dm_model.node_partition
+get_partition(dm_model::NetDecModel)::Vector{Set{Int64}} = dm_model.node_partition
 
-get_models(dm_model::DeNetModel)::Vector{<:PM.AbstractPowerModel} = dm_model.model_list
+get_models(dm_model::NetDecModel)::Vector{<:PM.AbstractPowerModel} = dm_model.model_list
 
-get_split_vars(dm_model::DeNetModel)::Dict{Int64, Dict} = dm_model.split_line_vars
+get_split_vars(dm_model::NetDecModel)::Dict{Int64, Dict} = dm_model.split_line_vars
 
-function set_subnet_optimizer!(dm_model::DeNetModel, optimizer)
+function set_subnet_optimizer!(dm_model::NetDecModel, optimizer)
     for pm in get_models(dm_model)
         JuMP.set_optimizer(pm.model, optimizer)
     end

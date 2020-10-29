@@ -1,7 +1,7 @@
 # This file implements one solution method for the network decomposition
 # using LagrangeDual from DualDecomposition.jl
 
-function init_DD_algo(dn_model::DeNetModel; method::Type{T} = BM.TrustRegionMethod, maxiter::Int64 = 1000)::DD.LagrangeDual where T <: BM.AbstractMethod
+function init_DD_algo(dn_model::NetDecModel; method::Type{T} = BM.TrustRegionMethod, maxiter::Int64 = 1000)::DD.LagrangeDual where T <: BM.AbstractMethod
     algo = DD.LagrangeDual(method, maxiter)
     partition = get_partition(dn_model)
     models = get_models(dn_model)
@@ -12,7 +12,7 @@ function init_DD_algo(dn_model::DeNetModel; method::Type{T} = BM.TrustRegionMeth
     return algo
 end
 
-function add_split_vars_to_algo!(dn_model::DeNetModel, algo::DD.AbstractMethod)
+function add_split_vars_to_algo!(dn_model::NetDecModel, algo::DD.AbstractMethod)
     coupling_vars = Vector{DD.CouplingVariableRef}()
     partition = get_partition(dn_model)
     split_vars = get_split_vars(dn_model)
