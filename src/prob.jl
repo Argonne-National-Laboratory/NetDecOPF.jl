@@ -25,7 +25,7 @@ function decompose(
     for i in eachindex(N_gs)
         N_g = N_gs[i]
         sub_data = generate_subnet_data(data, N_g)
-        push!(models, instantiate_model(sub_data, modeltype, build_function, ref_extensions = push!([ref_add_cut_bus!, ref_add_cut_branch!], extra_ref_extensions...)))
+        push!(models, PM.instantiate_model(sub_data, modeltype, build_function, ref_extensions = push!([ref_add_cut_bus!, ref_add_cut_branch!], extra_ref_extensions...)))
         shared_vars_dict[i] = collect_split_vars(models[i])
     end
 
@@ -35,69 +35,70 @@ end
 # modified from original build_opf
 # get rid of ref buses and apply power balance to only nodes in partition
 function build_opf_mod(pm::PM.ACRPowerModel)
-    variable_bus_voltage(pm, bounded=false)
-    vr = var(pm, :vr)
-    vi = var(pm, :vi)
-    for (i, bus) in setdiff(ref(pm, :bus), ref(pm, :cut_bus))
-        JuMP.set_lower_bound(vr[i], -bus["vmax"])
-        JuMP.set_upper_bound(vr[i],  bus["vmax"])
-        JuMP.set_lower_bound(vi[i], -bus["vmax"])
-        JuMP.set_upper_bound(vi[i],  bus["vmax"])
-        constraint_voltage_magnitude_bounds(pm, i)
-    end
-    variable_gen_power(pm)
-    variable_branch_power(pm)
-    variable_dcline_power(pm)
+    # variable_bus_voltage(pm, bounded=false)
+    # vr = var(pm, :vr)
+    # vi = var(pm, :vi)
+    # for (i, bus) in setdiff(ref(pm, :bus), ref(pm, :cut_bus))
+    #     JuMP.set_lower_bound(vr[i], -bus["vmax"])
+    #     JuMP.set_upper_bound(vr[i],  bus["vmax"])
+    #     JuMP.set_lower_bound(vi[i], -bus["vmax"])
+    #     JuMP.set_upper_bound(vi[i],  bus["vmax"])
+    #     constraint_voltage_magnitude_bounds(pm, i)
+    # end
+    PM.variable_bus_voltage(pm)
+    PM.variable_gen_power(pm)
+    PM.variable_branch_power(pm)
+    PM.variable_dcline_power(pm)
 
     objective_min_fuel_and_flow_cost_mod(pm)
 
-    constraint_model_voltage(pm)
+    PM.constraint_model_voltage(pm)
 
-    for i in setdiff(ids(pm, :bus), ids(pm, :cut_bus))
-        constraint_power_balance(pm, i)
+    for i in setdiff(PM.ids(pm, :bus), PM.ids(pm, :cut_bus))
+        PM.constraint_power_balance(pm, i)
     end
 
-    for i in ids(pm, :branch)
-        constraint_ohms_yt_from(pm, i)
-        constraint_ohms_yt_to(pm, i)
+    for i in PM.ids(pm, :branch)
+        PM.constraint_ohms_yt_from(pm, i)
+        PM.constraint_ohms_yt_to(pm, i)
 
-        constraint_voltage_angle_difference(pm, i)
+        PM.constraint_voltage_angle_difference(pm, i)
 
-        constraint_thermal_limit_from(pm, i)
-        constraint_thermal_limit_to(pm, i)
+        PM.constraint_thermal_limit_from(pm, i)
+        PM.constraint_thermal_limit_to(pm, i)
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
+    for i in PM.ids(pm, :dcline)
+        PM.constraint_dcline_power_losses(pm, i)
     end
 end
 
 function build_opf_mod(pm::PM.AbstractPowerModel)
-    variable_bus_voltage(pm)
-    variable_gen_power(pm)
-    variable_branch_power(pm)
-    variable_dcline_power(pm)
+    PM.variable_bus_voltage(pm)
+    PM.variable_gen_power(pm)
+    PM.variable_branch_power(pm)
+    PM.variable_dcline_power(pm)
 
     objective_min_fuel_and_flow_cost_mod(pm)
 
-    constraint_model_voltage(pm)
+    PM.constraint_model_voltage(pm)
 
-    for i in setdiff(ids(pm, :bus), ids(pm, :cut_bus))
-        constraint_power_balance(pm, i)
+    for i in setdiff(PM.ids(pm, :bus), PM.ids(pm, :cut_bus))
+        PM.constraint_power_balance(pm, i)
     end
 
-    for i in ids(pm, :branch)
-        constraint_ohms_yt_from(pm, i)
-        constraint_ohms_yt_to(pm, i)
+    for i in PM.ids(pm, :branch)
+        PM.constraint_ohms_yt_from(pm, i)
+        PM.constraint_ohms_yt_to(pm, i)
 
-        constraint_voltage_angle_difference(pm, i)
+        PM.constraint_voltage_angle_difference(pm, i)
 
-        constraint_thermal_limit_from(pm, i)
-        constraint_thermal_limit_to(pm, i)
+        PM.constraint_thermal_limit_from(pm, i)
+        PM.constraint_thermal_limit_to(pm, i)
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
+    for i in PM.ids(pm, :dcline)
+        PM.constraint_dcline_power_losses(pm, i)
     end
 end
 
@@ -129,64 +130,64 @@ end
 # modified from original build_ots
 # get rid of ref buses and apply power balance to only nodes in partition
 function build_ots_mod(pm::PM.AbstractPowerModel)
-    variable_branch_indicator(pm)
-    variable_bus_voltage_on_off(pm)
-    variable_gen_power(pm)
-    variable_branch_power(pm)
-    variable_dcline_power(pm)
+    PM.variable_branch_indicator(pm)
+    PM.variable_bus_voltage_on_off(pm)
+    PM.variable_gen_power(pm)
+    PM.variable_branch_power(pm)
+    PM.variable_dcline_power(pm)
 
     objective_min_fuel_and_flow_cost_mod(pm)
 
-    constraint_model_voltage_on_off(pm)
+    PM.constraint_model_voltage_on_off(pm)
 
-    for i in setdiff(ids(pm, :bus), ids(pm, :cut_bus))
-        constraint_power_balance(pm, i)
+    for i in setdiff(PM.ids(pm, :bus), PM.ids(pm, :cut_bus))
+        PM.constraint_power_balance(pm, i)
     end
 
-    for i in ids(pm, :branch)
-        constraint_ohms_yt_from_on_off(pm, i)
-        constraint_ohms_yt_to_on_off(pm, i)
+    for i in PM.ids(pm, :branch)
+        PM.constraint_ohms_yt_from_on_off(pm, i)
+        PM.constraint_ohms_yt_to_on_off(pm, i)
 
-        constraint_voltage_angle_difference_on_off(pm, i)
+        PM.constraint_voltage_angle_difference_on_off(pm, i)
 
-        constraint_thermal_limit_from_on_off(pm, i)
-        constraint_thermal_limit_to_on_off(pm, i)
+        PM.constraint_thermal_limit_from_on_off(pm, i)
+        PM.constraint_thermal_limit_to_on_off(pm, i)
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
+    for i in PM.ids(pm, :dcline)
+        PM.constraint_dcline_power_losses(pm, i)
     end
 end
 
 # modified from original build_opf_bf
 # get rid of ref buses and apply power balance to only nodes in partition
 function build_opf_bf_mod(pm::PM.AbstractPowerModel)
-    variable_bus_voltage(pm)
-    variable_gen_power(pm)
-    variable_branch_power(pm)
-    variable_branch_current(pm)
-    variable_dcline_power(pm)
+    PM.variable_bus_voltage(pm)
+    PM.variable_gen_power(pm)
+    PM.variable_branch_power(pm)
+    PM.variable_branch_current(pm)
+    PM.variable_dcline_power(pm)
 
     objective_min_fuel_and_flow_cost_mod(pm)
 
-    constraint_model_current(pm)
+    PM.constraint_model_current(pm)
 
-    for i in setdiff(ids(pm, :bus), ids(pm, :cut_bus))
-        constraint_power_balance(pm, i)
+    for i in setdiff(PM.ids(pm, :bus), PM.ids(pm, :cut_bus))
+        PM.constraint_power_balance(pm, i)
     end
 
-    for i in ids(pm, :branch)
-        constraint_power_losses(pm, i)
-        constraint_voltage_magnitude_difference(pm, i)
+    for i in PM.ids(pm, :branch)
+        PM.constraint_power_losses(pm, i)
+        PM.constraint_voltage_magnitude_difference(pm, i)
 
-        constraint_voltage_angle_difference(pm, i)
+        PM.constraint_voltage_angle_difference(pm, i)
 
-        constraint_thermal_limit_from(pm, i)
-        constraint_thermal_limit_to(pm, i)
+        PM.constraint_thermal_limit_from(pm, i)
+        PM.constraint_thermal_limit_to(pm, i)
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
+    for i in PM.ids(pm, :dcline)
+        PM.constraint_dcline_power_losses(pm, i)
     end
 end
 
@@ -194,11 +195,11 @@ end
 # modified from original objective_min_fuel_and_flow_cost to allow for
 # the case with no generators
 function objective_min_fuel_and_flow_cost_mod(pm::PM.AbstractPowerModel; kwargs...)
-    model = check_cost_models(pm)
+    model = PM.check_cost_models(pm)
     if model == 1
-        return objective_min_fuel_and_flow_cost_pwl(pm; kwargs...)
+        return PM.objective_min_fuel_and_flow_cost_pwl(pm; kwargs...)
     elseif model == 2
-        return objective_min_fuel_and_flow_cost_polynomial(pm; kwargs...)
+        return PM.objective_min_fuel_and_flow_cost_polynomial(pm; kwargs...)
     elseif model === nothing
         return JuMP.@objective(pm.model, Min, 0)
     else
@@ -207,17 +208,17 @@ function objective_min_fuel_and_flow_cost_mod(pm::PM.AbstractPowerModel; kwargs.
 end
 
 function variable_w_matrix(pm::PM.ACRPowerModel; nw::Int=pm.cnw)
-    wrr = var(pm, nw)[:wrr] = JuMP.@variable(pm.model,
-        [i in ids(pm, nw, :bus), j in ids(pm, nw, :bus)], base_name="$(nw)_wrr",
-        start = comp_start_value(ref(pm, nw, :bus, i), "vr_start", 1.0) * comp_start_value(ref(pm, nw, :bus, j), "vr_start", 1.0)
+    wrr = PM.var(pm, nw)[:wrr] = JuMP.@variable(pm.model,
+        [i in PM.ids(pm, nw, :bus), j in PM.ids(pm, nw, :bus)], base_name="$(nw)_wrr",
+        start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vr_start", 1.0) * PM.comp_start_value(PM.ref(pm, nw, :bus, j), "vr_start", 1.0)
         )
-    wri = var(pm, nw)[:wri] = JuMP.@variable(pm.model,
-        [i in ids(pm, nw, :bus), j in ids(pm, nw, :bus)], base_name="$(nw)_wri",
-        start = comp_start_value(ref(pm, nw, :bus, i), "vr_start", 1.0) * comp_start_value(ref(pm, nw, :bus, j), "vi_start")
+    wri = PM.var(pm, nw)[:wri] = JuMP.@variable(pm.model,
+        [i in PM.ids(pm, nw, :bus), j in PM.ids(pm, nw, :bus)], base_name="$(nw)_wri",
+        start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vr_start", 1.0) * PM.comp_start_value(PM.ref(pm, nw, :bus, j), "vi_start")
         )
-    wii = var(pm, nw)[:wii] = JuMP.@variable(pm.model,
-        [i in ids(pm, nw, :bus), j in ids(pm, nw, :bus)], base_name="$(nw)_wii",
-        start = comp_start_value(ref(pm, nw, :bus, i), "vi_start") * comp_start_value(ref(pm, nw, :bus, j), "vi_start")
+    wii = PM.var(pm, nw)[:wii] = JuMP.@variable(pm.model,
+        [i in PM.ids(pm, nw, :bus), j in PM.ids(pm, nw, :bus)], base_name="$(nw)_wii",
+        start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vi_start") * PM.comp_start_value(PM.ref(pm, nw, :bus, j), "vi_start")
         )
 end
 
@@ -249,19 +250,19 @@ end
 function build_acopf_with_free_lines(pm::PM.AbstractPowerModel)
     build_opf_mod(pm)
     variable_w_matrix(pm)
-    wrr = var(pm, :wrr)
-    wri = var(pm, :wri)
-    wii = var(pm, :wii)
-    vr = var(pm, :vr)
-    vi = var(pm, :vi)
-    for (i, _) in ref(pm, :bus), (j, _) in ref(pm, :bus)
+    wrr = PM.var(pm, :wrr)
+    wri = PM.var(pm, :wri)
+    wii = PM.var(pm, :wii)
+    vr = PM.var(pm, :vr)
+    vi = PM.var(pm, :vi)
+    for (i, _) in PM.ref(pm, :bus), (j, _) in PM.ref(pm, :bus)
         JuMP.@constraint(pm.model, wrr[i,j] == vr[i] * vr[j])
         JuMP.@constraint(pm.model, wri[i,j] == vr[i] * vi[j])
         JuMP.@constraint(pm.model, wii[i,j] == vi[i] * vi[j])
     end
 end
 
-function build_acopf_with_free_lines(pm::SDPWRMPowerModel)
+function build_acopf_with_free_lines(pm::PM.SDPWRMPowerModel)
     build_opf_mod(pm)
 end
 
@@ -284,14 +285,14 @@ end
 
 
 function collect_split_vars(pm::PM.ACPPowerModel)
-    p = var(pm, :p)
-    q = var(pm, :q)
-    z = var(pm, :z_branch)
-    shared_vars_dict = Dict{String, Dict{Tuple, VariableRef}}()
-    shared_vars_dict["z"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    cut_arcs_from = ref(pm, :cut_arcs_from)
+    p = PM.var(pm, :p)
+    q = PM.var(pm, :q)
+    z = PM.var(pm, :z_branch)
+    shared_vars_dict = Dict{String, Dict{Tuple, JuMP.VariableRef}}()
+    shared_vars_dict["z"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    cut_arcs_from = PM.ref(pm, :cut_arcs_from)
     for (l,i,j) in cut_arcs_from
         shared_vars_dict["z"][(l,i,j)] = z[l]
         shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
@@ -303,21 +304,21 @@ function collect_split_vars(pm::PM.ACPPowerModel)
 end
 
 function collect_split_vars(pm::PM.ACRPowerModel)
-    wrr = var(pm, :wrr)
-    wri = var(pm, :wri)
-    wii = var(pm, :wii)
-    p  = var(pm,  :p)
-    q  = var(pm,  :q)
+    wrr = PM.var(pm, :wrr)
+    wri = PM.var(pm, :wri)
+    wii = PM.var(pm, :wii)
+    p  = PM.var(pm,  :p)
+    q  = PM.var(pm,  :q)
 
-    shared_vars_dict = Dict{String, Dict{Tuple, VariableRef}}()
-    shared_vars_dict["wrr"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["wri"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["wir"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["wii"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict = Dict{String, Dict{Tuple, JuMP.VariableRef}}()
+    shared_vars_dict["wrr"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["wri"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["wir"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["wii"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
 
-    cut_arcs_from = ref(pm, :cut_arcs_from)
+    cut_arcs_from = PM.ref(pm, :cut_arcs_from)
     for (l,i,j) in cut_arcs_from
         if !((i,j) in keys(shared_vars_dict["wrr"]))
             shared_vars_dict["wrr"][(i,j)] = wrr[i,j]
@@ -334,18 +335,18 @@ function collect_split_vars(pm::PM.ACRPowerModel)
 end
 
 function collect_split_vars(pm::PM.AbstractWRModel)
-    wr = var(pm, :wr)
-    wi = var(pm, :wi)
-    p  = var(pm,  :p)
-    q  = var(pm,  :q)
+    wr = PM.var(pm, :wr)
+    wi = PM.var(pm, :wi)
+    p  = PM.var(pm,  :p)
+    q  = PM.var(pm,  :q)
 
-    shared_vars_dict = Dict{String, Dict{Tuple, VariableRef}}()
-    shared_vars_dict["wr"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["wi"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict = Dict{String, Dict{Tuple, JuMP.VariableRef}}()
+    shared_vars_dict["wr"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["wi"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
 
-    cut_arcs_from = ref(pm, :cut_arcs_from)
+    cut_arcs_from = PM.ref(pm, :cut_arcs_from)
     for (l,i,j) in cut_arcs_from
         if !((i,j) in keys(shared_vars_dict["wr"]))
             shared_vars_dict["wr"][(i,j)] = wr[(i,j)]
@@ -360,16 +361,16 @@ function collect_split_vars(pm::PM.AbstractWRModel)
 end
 
 function collect_split_vars(pm::PM.AbstractBFModel)
-    p  = var(pm,  :p)
-    q  = var(pm,  :q)
-    ccm = var(pm, :ccm)
+    p  = PM.var(pm,  :p)
+    q  = PM.var(pm,  :q)
+    ccm = PM.var(pm, :ccm)
 
     shared_vars_dict = Dict{String, Dict}()
-    shared_vars_dict["ccm"] = Dict{Int64, VariableRef}()
-    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
+    shared_vars_dict["ccm"] = Dict{Int64, JuMP.VariableRef}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
 
-    cut_arcs_from = ref(pm, :cut_arcs_from)
+    cut_arcs_from = PM.ref(pm, :cut_arcs_from)
     for (l,i,j) in cut_arcs_from
         shared_vars_dict["ccm"][l] = ccm[l]
         shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
@@ -381,19 +382,19 @@ function collect_split_vars(pm::PM.AbstractBFModel)
 end
 
 function collect_split_vars(pm::PM.SDPWRMPowerModel)
-    p = var(pm, :p)
-    q = var(pm, :q)
-    WR = var(pm, :WR)
-    WI = var(pm, :WI)
-    bus_ids = ids(pm, :bus)
+    p = PM.var(pm, :p)
+    q = PM.var(pm, :q)
+    WR = PM.var(pm, :WR)
+    WI = PM.var(pm, :WI)
+    bus_ids = PM.ids(pm, :bus)
     lookup_w_index = Dict((bi,i) for (i,bi) in enumerate(bus_ids))
 
-    shared_vars_dict = Dict{String, Dict{Tuple, VariableRef}}()
-    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, VariableRef}()
-    shared_vars_dict["WR"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    shared_vars_dict["WI"] = Dict{Tuple{Int64, Int64}, VariableRef}()
-    cut_arcs_from = ref(pm, :cut_arcs_from)
+    shared_vars_dict = Dict{String, Dict{Tuple, JuMP.VariableRef}}()
+    shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["WR"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    shared_vars_dict["WI"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    cut_arcs_from = PM.ref(pm, :cut_arcs_from)
     for (l,i,j) in cut_arcs_from
         shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
         shared_vars_dict["p"][(l,j,i)] = p[(l,j,i)]

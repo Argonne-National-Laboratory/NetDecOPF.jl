@@ -1,10 +1,11 @@
 module NetDecOPF
 
 # Import necessary packages
-using JuMP
-using PowerModels
-using DualDecomposition
-using BundleMethod
+import JuMP
+import PowerModels
+import DualDecomposition
+import BundleMethod
+import LinearAlgebra: I
 const PM = PowerModels
 const DD = DualDecomposition
 const BM = BundleMethod
