@@ -11,7 +11,7 @@ MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 PowerModels = "c36e90e8-916a-50a6-bd94-075b64ef4655"
 
 [compat]
-BundleMethod = "0.1.4"
+BundleMethod = "0.2.1"
 JuMP = "0.21.5"
 MathOptInterface = "0.9.17"
 PowerModels = "0.17.3"
