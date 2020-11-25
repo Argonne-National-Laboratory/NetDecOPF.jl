@@ -22,10 +22,14 @@ function decompose(
 
     models = T[]
     shared_vars_dict = Dict{Int64, Dict}()
+    denet_refs = [ref_add_cut_bus!, ref_add_cut_branch!]
+    if T <: PM.AbstractWRMModel
+        push!(denet_refs, ref_add_global_bus!)
+    end
     for i in eachindex(N_gs)
         N_g = N_gs[i]
         sub_data = generate_subnet_data(data, N_g)
-        push!(models, PM.instantiate_model(sub_data, modeltype, build_function, ref_extensions = push!([ref_add_cut_bus!, ref_add_cut_branch!], extra_ref_extensions...)))
+        push!(models, PM.instantiate_model(sub_data, modeltype, build_function, ref_extensions = push!(denet_refs, extra_ref_extensions...)))
         shared_vars_dict[i] = collect_split_vars(models[i])
     end
 
@@ -34,7 +38,7 @@ end
 
 # modified from original build_opf
 # get rid of ref buses and apply power balance to only nodes in partition
-function build_opf_mod(pm::PM.ACRPowerModel)
+function build_opf_mod(pm::PM.AbstractPowerModel)
     # variable_bus_voltage(pm, bounded=false)
     # vr = var(pm, :vr)
     # vi = var(pm, :vi)
@@ -73,13 +77,93 @@ function build_opf_mod(pm::PM.ACRPowerModel)
     end
 end
 
-function build_opf_mod(pm::PM.AbstractPowerModel)
-    PM.variable_bus_voltage(pm)
+function build_opf_mod(pm::PM.AbstractWRMModel)
+    function variable_bus_voltage(pm::PM.AbstractWRMModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+        wr_min, wr_max, wi_min, wi_max = PM.ref_calc_voltage_product_bounds(PM.ref(pm, nw, :all_buspairs))
+        bus_ids = PM.ids(pm, nw, :all_bus)
+    
+        w_index = 1:length(bus_ids)
+        lookup_w_index = Dict((bi,i) for (i,bi) in enumerate(bus_ids))
+    
+        WR_start = zeros(length(bus_ids), length(bus_ids)) + I
+    
+        WR = PM.var(pm, nw)[:WR] = JuMP.@variable(pm.model,
+            [i=1:length(bus_ids), j=1:length(bus_ids)], Symmetric, base_name="$(nw)_WR", start=WR_start[i,j]
+        )
+        if report
+            PM.sol(pm, nw)[:WR] = WR
+        end
+    
+        WI = PM.var(pm, nw)[:WI] = JuMP.@variable(pm.model,
+            [1:length(bus_ids), 1:length(bus_ids)], base_name="$(nw)_WI", start=0.0
+        )
+        if report
+            PM.sol(pm, nw)[:WI] = WI
+        end
+    
+        # bounds on diagonal
+        for (i, bus) in PM.ref(pm, nw, :all_bus)
+            w_idx = lookup_w_index[i]
+            wr_ii = WR[w_idx,w_idx]
+            wi_ii = WR[w_idx,w_idx]
+    
+            if bounded
+                JuMP.set_lower_bound(wr_ii, (bus["vmin"])^2)
+                JuMP.set_upper_bound(wr_ii, (bus["vmax"])^2)    
+            else
+                JuMP.set_lower_bound(wr_ii, 0)
+            end
+        end
+    
+        # bounds on off-diagonal
+        for (i,j) in PM.ids(pm, nw, :all_buspairs)
+            wi_idx = lookup_w_index[i]
+            wj_idx = lookup_w_index[j]
+    
+            if bounded
+                JuMP.set_upper_bound(WR[wi_idx, wj_idx], wr_max[(i,j)])
+                JuMP.set_lower_bound(WR[wi_idx, wj_idx], wr_min[(i,j)])
+    
+                JuMP.set_upper_bound(WI[wi_idx, wj_idx], wi_max[(i,j)])
+                JuMP.set_lower_bound(WI[wi_idx, wj_idx], wi_min[(i,j)])
+            end
+        end
+    
+        PM.var(pm, nw)[:w] = Dict{Int,Any}()
+        for (i, bus) in PM.ref(pm, nw, :all_bus)
+            w_idx = lookup_w_index[i]
+            PM.var(pm, nw, :w)[i] = WR[w_idx,w_idx]
+        end
+        report && PM._IM.sol_component_value(pm, nw, :all_bus, :w, PM.ids(pm, nw, :all_bus), PM.var(pm, nw)[:w])
+    
+        PM.var(pm, nw)[:wr] = Dict{Tuple{Int,Int},Any}()
+        PM.var(pm, nw)[:wi] = Dict{Tuple{Int,Int},Any}()
+        for (i,j) in PM.ids(pm, nw, :all_buspairs)
+            w_fr_index = lookup_w_index[i]
+            w_to_index = lookup_w_index[j]
+    
+            PM.var(pm, nw, :wr)[(i,j)] = WR[w_fr_index, w_to_index]
+            PM.var(pm, nw, :wi)[(i,j)] = WI[w_fr_index, w_to_index]
+        end
+    end
+    function constraint_voltage_angle_difference_all(pm::PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+        branch = PM.ref(pm, nw, :all_branch, i)
+        f_bus = branch["f_bus"]
+        t_bus = branch["t_bus"]
+        f_idx = (i, f_bus, t_bus)
+        pair = (f_bus, t_bus)
+        buspair = PM.ref(pm, nw, :all_buspairs, pair)
+    
+        if buspair["branch"] == i
+            PM.constraint_voltage_angle_difference(pm, nw, f_idx, buspair["angmin"], buspair["angmax"])
+        end
+    end
+    variable_bus_voltage(pm) # re-define W matrix
     PM.variable_gen_power(pm)
     PM.variable_branch_power(pm)
     PM.variable_dcline_power(pm)
 
-    objective_min_fuel_and_flow_cost_mod(pm)
+    objective_min_fuel_and_flow_cost_mod(pm) # allow for no generator case
 
     PM.constraint_model_voltage(pm)
 
@@ -91,10 +175,14 @@ function build_opf_mod(pm::PM.AbstractPowerModel)
         PM.constraint_ohms_yt_from(pm, i)
         PM.constraint_ohms_yt_to(pm, i)
 
-        PM.constraint_voltage_angle_difference(pm, i)
+        # PM.constraint_voltage_angle_difference(pm, i)
 
         PM.constraint_thermal_limit_from(pm, i)
         PM.constraint_thermal_limit_to(pm, i)
+    end
+
+    for i in PM.ids(pm, :all_branch)
+        constraint_voltage_angle_difference_all(pm, i)
     end
 
     for i in PM.ids(pm, :dcline)
@@ -225,20 +313,21 @@ end
 #=
 function build_acopf_with_free_lines(pm::PM.AbstractPowerModel)
     # this is for adding w variables to the model
-    variable_bus_voltage_magnitude_sqr(pm)
-    variable_buspair_voltage_product(pm)
+    build_opf_mod(pm)
+    PM.variable_bus_voltage_magnitude_sqr(pm)
+    PM.variable_buspair_voltage_product(pm)
 
-    w  = var(pm,  :w)
-    wr = var(pm, :wr)
-    wi = var(pm, :wi)
-    vr = var(pm, :vr)
-    vi = var(pm, :vi)
+    w  = PM.var(pm,  :w)
+    wr = PM.var(pm, :wr)
+    wi = PM.var(pm, :wi)
+    vr = PM.var(pm, :vr)
+    vi = PM.var(pm, :vi)
 
-    for (i, bus) in ref(pm, :bus)
+    for (i, bus) in PM.ref(pm, :bus)
         JuMP.@constraint(pm.model, w[i] == vr[i]^2 + vi[i]^2)
     end
 
-    for (_, branch) in ref(pm, :branch)
+    for (_, branch) in PM.ref(pm, :branch)
         fbus = branch["f_bus"]
         tbus = branch["t_bus"]
         JuMP.@constraint(pm.model, wr[(fbus, tbus)] == vr[fbus] * vr[tbus] + vi[fbus] * vi[tbus])
@@ -381,12 +470,12 @@ function collect_split_vars(pm::PM.AbstractBFModel)
     return shared_vars_dict
 end
 
-function collect_split_vars(pm::PM.SDPWRMPowerModel)
+function collect_split_vars(pm::PM.AbstractWRMModel)
     p = PM.var(pm, :p)
     q = PM.var(pm, :q)
     WR = PM.var(pm, :WR)
     WI = PM.var(pm, :WI)
-    bus_ids = PM.ids(pm, :bus)
+    bus_ids = PM.ids(pm, :all_bus) # all buses from the full network 
     lookup_w_index = Dict((bi,i) for (i,bi) in enumerate(bus_ids))
 
     shared_vars_dict = Dict{String, Dict{Tuple, JuMP.VariableRef}}()
@@ -395,15 +484,45 @@ function collect_split_vars(pm::PM.SDPWRMPowerModel)
     shared_vars_dict["WR"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
     shared_vars_dict["WI"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
     cut_arcs_from = PM.ref(pm, :cut_arcs_from)
-    for (l,i,j) in cut_arcs_from
+    for (l,i,j) in cut_arcs_from # penalizing cut lines
         shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
         shared_vars_dict["p"][(l,j,i)] = p[(l,j,i)]
         shared_vars_dict["q"][(l,i,j)] = q[(l,i,j)]
         shared_vars_dict["q"][(l,j,i)] = q[(l,j,i)]
+    end
+    bus = PM.ids(pm, :bus)
+    for i in bus_ids, j in bus_ids
         shared_vars_dict["WR"][(i,j)] = WR[lookup_w_index[i], lookup_w_index[j]]
         shared_vars_dict["WI"][(i,j)] = WI[lookup_w_index[i], lookup_w_index[j]]
-        shared_vars_dict["WR"][(j,i)] = WR[lookup_w_index[j], lookup_w_index[i]]
-        shared_vars_dict["WI"][(j,i)] = WI[lookup_w_index[j], lookup_w_index[i]]
+        if i != j
+            shared_vars_dict["WR"][(j,i)] = WR[lookup_w_index[j], lookup_w_index[i]]
+            shared_vars_dict["WI"][(j,i)] = WI[lookup_w_index[j], lookup_w_index[i]]
+        end
     end
     return shared_vars_dict
 end
+
+######################################################
+###             EXPERIMENTAL FUNCTIONS             ###
+######################################################
+
+function constraint_model_voltage_mod(pm::PM.AbstractPowerModel)
+    PM.constraint_model_voltage(pm)
+end
+
+# function constraint_model_voltage_mod(pm::PM.AbstractWRMModel)
+#     PM._check_missing_keys(PM.var(pm), [:WR,:WI], typeof(pm))
+
+#     WR = PM.var(pm)[:WR]
+#     WI = PM.var(pm)[:WI]
+
+#     bus_ids = PM.ids(pm, :bus)
+#     lookup_w_index = Dict((bi,i) for (i,bi) in enumerate(bus_ids))
+
+#     local_buses = setdiff(PM.ids(pm, :bus), PM.ids(pm, :cut_bus))
+#     local_w_idx = [lookup_w_index[i] for i in local_buses]
+
+#     WR_local = WR[local_w_idx, local_w_idx]
+#     WI_local = WI[local_w_idx, local_w_idx]
+#     JuMP.@constraint(pm.model, [WR_local WI_local; -WI_local WR_local] in JuMP.PSDCone())
+# end

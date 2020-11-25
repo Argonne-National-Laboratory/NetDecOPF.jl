@@ -68,3 +68,68 @@ function ref_add_cut_bus_arcs_refs!(ref::Dict{Symbol, Any}, data::Dict{String, A
     end
 end
 =#
+
+function ref_add_global_bus!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
+    function calc_all_buspair_parameters(buses, branches, conductor_ids, ismulticondcutor)
+        bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses)    
+        branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches)
+        buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
+        bp_branch = Dict((bp, typemax(Int64)) for bp in buspair_indexes)
+    
+        if ismulticondcutor
+            bp_angmin = Dict((bp, [-Inf for c in conductor_ids]) for bp in buspair_indexes)
+            bp_angmax = Dict((bp, [ Inf for c in conductor_ids]) for bp in buspair_indexes)
+        else
+            @assert(length(conductor_ids) == 1)
+            bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+            bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+        end
+    
+        for (l,branch) in branch_lookup
+            i = branch["f_bus"]
+            j = branch["t_bus"]
+    
+            if ismulticondcutor
+                for c in conductor_ids
+                    bp_angmin[(i,j)][c] = max(bp_angmin[(i,j)][c], branch["angmin"][c])
+                    bp_angmax[(i,j)][c] = min(bp_angmax[(i,j)][c], branch["angmax"][c])
+                end
+            else
+                bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
+                bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
+            end
+    
+            bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+        end
+    
+        buspairs = Dict((i,j) => Dict(
+            "branch"=>bp_branch[(i,j)],
+            "angmin"=>bp_angmin[(i,j)],
+            "angmax"=>bp_angmax[(i,j)],
+            "tap"=>branch_lookup[bp_branch[(i,j)]]["tap"],
+            "vm_fr_min"=>bus_lookup[i]["vmin"],
+            "vm_fr_max"=>bus_lookup[i]["vmax"],
+            "vm_to_min"=>bus_lookup[j]["vmin"],
+            "vm_to_max"=>bus_lookup[j]["vmax"]
+            ) for (i,j) in buspair_indexes
+        )
+    
+        # add optional parameters
+        for bp in buspair_indexes
+            branch = branch_lookup[bp_branch[bp]]
+            if haskey(branch, "rate_a")
+                buspairs[bp]["rate_a"] = branch["rate_a"]
+            end
+            if haskey(branch, "c_rating_a")
+                buspairs[bp]["c_rating_a"] = branch["c_rating_a"]
+            end
+        end
+    
+        return buspairs
+    end
+    for (nw, nw_ref) in ref[:nw]
+        nw_ref[:all_bus] = Dict(j["bus_i"] => j for (_, j) in data["bus"])
+        nw_ref[:all_branch] = Dict{Int, Any}(parse(Int, k) => v for (k,v) in data["branch"])
+        nw_ref[:all_buspairs] = calc_all_buspair_parameters(nw_ref[:all_bus], nw_ref[:all_branch], nw_ref[:conductor_ids], haskey(nw_ref, :conductors))
+    end
+end
