@@ -23,4 +23,8 @@ export decompose, build_acopf_with_free_lines, build_socbf_with_free_lines, buil
 
 export init_DD_algo, add_split_vars_to_algo!
 
+include("prob_ext.jl")
+
+export W_ACRModel
+
 end # module

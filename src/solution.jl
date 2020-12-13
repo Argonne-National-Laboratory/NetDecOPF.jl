@@ -20,7 +20,8 @@ function add_split_vars_to_algo!(dn_model::NetDecModel, algo::DD.AbstractMethod)
         vars_dict = split_vars[i]
         for (varname, dict) in vars_dict
             for (idx, vref) in dict
-                id = varname * "_" * string(idx)
+                # id = varname * "_" * string(idx)
+                id = (varname, idx)
                 push!(coupling_vars, DD.CouplingVariableRef(i, id, vref))
             end
         end    
