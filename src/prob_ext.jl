@@ -13,10 +13,10 @@ function build_acopf_with_free_lines(pm::W_ACRModel)
         JuMP.set_upper_bound(vi[i],  bus["vmax"])
     end
 
-    # w = PM.var(pm, :w)
-    # for (i, bus) in PM.ref(pm, nw, :bus)
-    #     JuMP.@constraint(pm.model, w[i] == vr[i]^2 + vi[i]^2)
-    # end
+    w = PM.var(pm, :w)
+    for (i, bus) in PM.ref(pm, nw, :bus)
+        JuMP.@constraint(pm.model, w[i] == vr[i]^2 + vi[i]^2)
+    end
 
     wr = PM.var(pm, :wr)
     wi = PM.var(pm, :wi)
