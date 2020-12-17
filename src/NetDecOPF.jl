@@ -25,6 +25,6 @@ export init_DD_algo, add_split_vars_to_algo!
 
 include("prob_ext.jl")
 
-export W_ACRModel
+export W_ACRModel, WU_ACRModel
 
 end # module
