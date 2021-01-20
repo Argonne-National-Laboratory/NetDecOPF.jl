@@ -29,7 +29,9 @@ version = "0.5.0"
 
 [[BundleMethod]]
 deps = ["JuMP", "LinearAlgebra", "Printf", "SparseArrays"]
-git-tree-sha1 = "11483252330252dc23752f1a9f4eedc797029d40"
+git-tree-sha1 = "8271d357559a1800edc3ba536b74aab365ddf512"
+repo-rev = "kimk"
+repo-url = "https://github.com/kibaekkim/BundleMethod.jl.git"
 uuid = "e8a6717a-069f-43d5-9ac2-a49b1ec5be7b"
 version = "0.2.1"
 
@@ -125,7 +127,9 @@ version = "0.8.3"
 
 [[DualDecomposition]]
 deps = ["BundleMethod", "JuMP", "MPI", "SparseArrays"]
-git-tree-sha1 = "a9cd24b6ae3727dd9e60a228479e21110fb12684"
+git-tree-sha1 = "fa7ae4df5a8d2aeee4d60774469b68f77b26ca26"
+repo-rev = "kkim/dev"
+repo-url = "https://github.com/kibaekkim/DualDecomposition.jl.git"
 uuid = "d0e446f1-e135-48f1-a6ea-e9a6190f2a7a"
 version = "0.1.3"
 
