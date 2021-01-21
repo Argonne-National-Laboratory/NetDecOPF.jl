@@ -1,6 +1,4 @@
-
-function metis_cluster(file, N_partition)
-    data = PM.parse_matpower(file)
+function metis_cluster(data::Dict, N_partition)
     N = length(data["bus"])
     buses = collect(keys(data["bus"]))
     buses = sort([parse(Int, i) for i in buses])
@@ -25,3 +23,4 @@ function metis_cluster(file, N_partition)
 
     return partitions
 end
+metis_cluster(file::String, N_partition) = metis_cluster(PM.parse_matpower(file), N_partition)
