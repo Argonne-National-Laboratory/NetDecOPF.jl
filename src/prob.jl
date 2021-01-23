@@ -430,17 +430,17 @@ function collect_split_vars(pm::PM.AbstractWRModel)
     q  = PM.var(pm,  :q)
 
     shared_vars_dict = Dict{String, Dict{Tuple, JuMP.VariableRef}}()
-    shared_vars_dict["wr"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
-    shared_vars_dict["wi"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    # shared_vars_dict["wr"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
+    # shared_vars_dict["wi"] = Dict{Tuple{Int64, Int64}, JuMP.VariableRef}()
     shared_vars_dict["p"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
     shared_vars_dict["q"] = Dict{Tuple{Int64, Int64, Int64}, JuMP.VariableRef}()
 
     cut_arcs_from = PM.ref(pm, :cut_arcs_from)
     for (l,i,j) in cut_arcs_from
-        if !((i,j) in keys(shared_vars_dict["wr"]))
-            shared_vars_dict["wr"][(i,j)] = wr[(i,j)]
-            shared_vars_dict["wi"][(i,j)] = wi[(i,j)]
-        end
+        # if !((i,j) in keys(shared_vars_dict["wr"]))
+        #     shared_vars_dict["wr"][(i,j)] = wr[(i,j)]
+        #     shared_vars_dict["wi"][(i,j)] = wi[(i,j)]
+        # end
         shared_vars_dict["p"][(l,i,j)] = p[(l,i,j)]
         shared_vars_dict["p"][(l,j,i)] = p[(l,j,i)]
         shared_vars_dict["q"][(l,i,j)] = q[(l,i,j)]
