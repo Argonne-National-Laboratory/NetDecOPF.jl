@@ -1,10 +1,14 @@
 # This file includes all functions that serve to create data structures that 
 # record partition information and relevant network parameters
 
+# NOTE: this file is updated to incorporate the case when soem lines are inactivated while parsed by PowerModels.jl
+#       however, we are still assuming that all buses are active (which might cause errors if not true)
+
 function find_neighbor_buses(data::Dict{String, Any}, N_g::Set{Int64})::Set{Int64}
     neighbors = Set{Int64}()
     for line in keys(data["branch"])
-        if data["branch"][line]["f_bus"] in N_g || data["branch"][line]["t_bus"] in N_g
+        if data["branch"][line]["br_status"] != PM.pm_component_status_inactive["branch"] && 
+                (data["branch"][line]["f_bus"] in N_g || data["branch"][line]["t_bus"] in N_g)
             push!(neighbors, data["branch"][line]["f_bus"], data["branch"][line]["t_bus"])
         end
     end
@@ -49,6 +53,7 @@ function ref_add_cut_branch!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     for (nw, nw_ref) in ref[:nw]
         # set up cut branches and arcs
         nw_ref[:cut_branch] = Dict(parse(Int, x.first) => x.second for x in data["branch"] if
+            x.second["br_status"] != PM.pm_component_status_inactive["branch"] &&
             (x.second["f_bus"] in keys(nw_ref[:bus])) + (x.second["t_bus"] in keys(nw_ref[:bus])) +
             (x.second["f_bus"] in keys(nw_ref[:cut_bus])) + (x.second["t_bus"] in keys(nw_ref[:cut_bus])) == 3)
         nw_ref[:cut_arcs_from] = [(i,branch["f_bus"],branch["t_bus"]) for (i,branch) in nw_ref[:cut_branch]]
@@ -129,7 +134,7 @@ function ref_add_global_bus!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     end
     for (nw, nw_ref) in ref[:nw]
         nw_ref[:all_bus] = Dict(j["bus_i"] => j for (_, j) in data["bus"])
-        nw_ref[:all_branch] = Dict{Int, Any}(parse(Int, k) => v for (k,v) in data["branch"])
+        nw_ref[:all_branch] = Dict{Int, Any}(parse(Int, k) => v for (k,v) in data["branch"] if v["br_status"] != PM.pm_component_status_inactive["branch"])
         nw_ref[:all_buspairs] = calc_all_buspair_parameters(nw_ref[:all_bus], nw_ref[:all_branch], nw_ref[:conductor_ids], haskey(nw_ref, :conductors))
     end
 end
