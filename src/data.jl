@@ -44,13 +44,13 @@ function generate_subnet_data(data::Dict{String, Any}, N_g::Set{Int64})
 end
 
 function ref_add_cut_bus!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
-    for (nw, nw_ref) in ref[:nw]
+    for (nw, nw_ref) in ref[:it][:pm][:nw]
         nw_ref[:cut_bus] = Dict(i => data["bus"]["$(i)"] for i in data["cut_bus"])
     end
 end
 
 function ref_add_cut_branch!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
-    for (nw, nw_ref) in ref[:nw]
+    for (nw, nw_ref) in ref[:it][:pm][:nw]
         # set up cut branches and arcs
         nw_ref[:cut_branch] = Dict(parse(Int, x.first) => x.second for x in data["branch"] if
             x.second["br_status"] != PM.pm_component_status_inactive["branch"] &&
@@ -132,7 +132,7 @@ function ref_add_global_bus!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     
         return buspairs
     end
-    for (nw, nw_ref) in ref[:nw]
+    for (nw, nw_ref) in ref[:it][:pm][:nw]
         nw_ref[:all_bus] = Dict(j["bus_i"] => j for (_, j) in data["bus"])
         nw_ref[:all_branch] = Dict{Int, Any}(parse(Int, k) => v for (k,v) in data["branch"] if v["br_status"] != PM.pm_component_status_inactive["branch"])
         nw_ref[:all_buspairs] = calc_all_buspair_parameters(nw_ref[:all_bus], nw_ref[:all_branch], nw_ref[:conductor_ids], haskey(nw_ref, :conductors))
