@@ -170,9 +170,9 @@ version = "0.1.2"
 
 [[InfrastructureModels]]
 deps = ["JuMP", "MathOptInterface", "Memento"]
-git-tree-sha1 = "063b6445c571530af740d46f9dd9d0a5a50bc8c9"
+git-tree-sha1 = "dab3d9518327ccd79e509e596895779877c17cf9"
 uuid = "2030c09a-7f63-5d83-885d-db604e0e9cc0"
-version = "0.5.4"
+version = "0.6.0"
 
 [[IniFile]]
 deps = ["Test"]
@@ -375,9 +375,9 @@ uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PowerModels]]
 deps = ["InfrastructureModels", "JSON", "JuMP", "LinearAlgebra", "MathOptInterface", "Memento", "NLsolve", "SparseArrays"]
-git-tree-sha1 = "fcfd50529b73d3fb9edd23d8d3173a9c27042bbc"
+git-tree-sha1 = "e408a20aafa64c1882743628c1c118bf71055df9"
 uuid = "c36e90e8-916a-50a6-bd94-075b64ef4655"
-version = "0.17.4"
+version = "0.18.0"
 
 [[Printf]]
 deps = ["Unicode"]
