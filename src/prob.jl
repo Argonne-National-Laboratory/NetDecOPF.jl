@@ -78,7 +78,7 @@ function build_opf_mod(pm::PM.AbstractPowerModel)
 end
 
 function build_opf_mod(pm::PM.AbstractWRMModel)
-    function variable_bus_voltage(pm::PM.AbstractWRMModel; nw::Int=pm.cnw, bounded::Bool=true, report::Bool=true)
+    function variable_bus_voltage(pm::PM.AbstractWRMModel; nw::Int=PM.nw_id_default, bounded::Bool=true, report::Bool=true)
         wr_min, wr_max, wi_min, wi_max = PM.ref_calc_voltage_product_bounds(PM.ref(pm, nw, :all_buspairs))
         bus_ids = PM.ids(pm, nw, :all_bus)
     
@@ -134,7 +134,7 @@ function build_opf_mod(pm::PM.AbstractWRMModel)
             w_idx = lookup_w_index[i]
             PM.var(pm, nw, :w)[i] = WR[w_idx,w_idx]
         end
-        report && PM._IM.sol_component_value(pm, nw, :all_bus, :w, PM.ids(pm, nw, :all_bus), PM.var(pm, nw)[:w])
+        report && PM.sol_component_value(pm, nw, :all_bus, :w, PM.ids(pm, nw, :all_bus), PM.var(pm, nw)[:w])
     
         PM.var(pm, nw)[:wr] = Dict{Tuple{Int,Int},Any}()
         PM.var(pm, nw)[:wi] = Dict{Tuple{Int,Int},Any}()
@@ -146,7 +146,7 @@ function build_opf_mod(pm::PM.AbstractWRMModel)
             PM.var(pm, nw, :wi)[(i,j)] = WI[w_fr_index, w_to_index]
         end
     end
-    function constraint_voltage_angle_difference_all(pm::PM.AbstractPowerModel, i::Int; nw::Int=pm.cnw)
+    function constraint_voltage_angle_difference_all(pm::PM.AbstractPowerModel, i::Int; nw::Int=PM.nw_id_default)
         branch = PM.ref(pm, nw, :all_branch, i)
         f_bus = branch["f_bus"]
         t_bus = branch["t_bus"]
@@ -295,7 +295,7 @@ function objective_min_fuel_and_flow_cost_mod(pm::PM.AbstractPowerModel; kwargs.
     end
 end
 
-function variable_w_matrix(pm::PM.ACRPowerModel; nw::Int=pm.cnw)
+function variable_w_matrix(pm::PM.ACRPowerModel; nw::Int=PM.nw_id_default)
     wrr = PM.var(pm, nw)[:wrr] = JuMP.@variable(pm.model,
         [i in PM.ids(pm, nw, :bus), j in PM.ids(pm, nw, :bus)], base_name="$(nw)_wrr",
         start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vr_start", 1.0) * PM.comp_start_value(PM.ref(pm, nw, :bus, j), "vr_start", 1.0)
