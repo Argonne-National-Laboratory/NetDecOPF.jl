@@ -1,5 +1,9 @@
 # NetDecOPF.jl
 
+[![Run tests](https://github.com/Argonne-National-Laboratory/NetDecOPF.jl/actions/workflows/test.yml/badge.svg)](https://github.com/Argonne-National-Laboratory/NetDecOPF.jl/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/Argonne-National-Laboratory/NetDecOPF.jl/branch/master/graph/badge.svg?token=NBSOXPS06D)](https://codecov.io/gh/Argonne-National-Laboratory/NetDecOPF.jl)
+[![DOI](https://zenodo.org/badge/285039510.svg)](https://zenodo.org/badge/latestdoi/285039510)
+
 This package implements a network decomposition formulation to solve large-scale optimization problems over power networks, e.g. ACOPF, OTS etc.
 
 ## Installation
@@ -65,6 +69,21 @@ Here line 3 initializes the dual decomposition based on our decomposed network m
 In the end we solve the network decomposition by calling the `DD.run!` function:
 ```julia
 julia> DD.run!(algo, LM)
+```
+
+## Citing this package
+
+```
+@misc{NetDecOPF.jl.0.1.0,
+  author       = {Zhang, Weiqi and Kim, Kibaek},
+  title        = {{NetDecOPF.jl: Implementation of network decomposition in Julia}},
+  month        = Mar,
+  year         = 2021,
+  doi          = {10.5281/zenodo.4592258},
+  version      = {0.1.0},
+  publisher    = {Zenodo},
+  url          = {https://doi.org/10.5281/zenodo.4592258}
+}
 ```
 
 ## Acknowledgement
