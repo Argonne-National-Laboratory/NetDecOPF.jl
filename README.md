@@ -7,7 +7,7 @@ This package implements a network decomposition formulation to solve large-scale
 This package can be installed by
 
 ```julia
-] add https://github.com/Argonne-National-Laboratory/NetDecOPF.jl.git
+] add NetDecOPF
 ```
 
 ## Basic Usage
