@@ -3,7 +3,7 @@ mutable struct WU_ACRModel <: PM.AbstractWRModel PM.@pm_fields end
 
 function build_acopf_with_free_lines(pm::W_ACRModel)
     build_opf_mod(pm)
-    nw = pm.cnw
+    nw = PM.nw_id_default
     vr = PM.var(pm, nw)[:vr] = JuMP.@variable(pm.model, [i in PM.ids(pm, nw, :bus)], base_name="$(nw)_vr", start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vr_start", 1.0))
     vi = PM.var(pm, nw)[:vi] = JuMP.@variable(pm.model, [i in PM.ids(pm, nw, :bus)], base_name="$(nw)_vi", start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vi_start"))
     for (i, bus) in PM.ref(pm, nw, :bus)
@@ -28,7 +28,7 @@ end
 
 function build_acopf_with_free_lines(pm::WU_ACRModel)
     build_opf_mod(pm)
-    nw = pm.cnw
+    nw = PM.nw_id_default
     vr = PM.var(pm, nw)[:vr] = JuMP.@variable(pm.model, [i in PM.ids(pm, nw, :bus)], base_name="$(nw)_vr", start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vr_start", 1.0))
     vi = PM.var(pm, nw)[:vi] = JuMP.@variable(pm.model, [i in PM.ids(pm, nw, :bus)], base_name="$(nw)_vi", start = PM.comp_start_value(PM.ref(pm, nw, :bus, i), "vi_start"))
     for (i, bus) in PM.ref(pm, nw, :bus)
