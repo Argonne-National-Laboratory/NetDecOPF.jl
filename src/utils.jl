@@ -1,4 +1,4 @@
-function metis_cluster(data::Dict, N_partition)
+function metis_cluster(data::Dict, N_partition, alg=:KWAY)
     N = length(data["bus"])
     buses = collect(keys(data["bus"]))
     buses = sort([parse(Int, i) for i in buses])
@@ -12,7 +12,7 @@ function metis_cluster(data::Dict, N_partition)
         LightGraphs.add_edge!(g, bus_idx_dict[i], bus_idx_dict[j])
     end
 
-    part = Metis.partition(g, N_partition)
+    part = Metis.partition(g, N_partition, alg=alg)
 
     partitions = [Int64[] for i in 1:N_partition]
 
@@ -23,4 +23,4 @@ function metis_cluster(data::Dict, N_partition)
 
     return partitions
 end
-metis_cluster(file::String, N_partition) = metis_cluster(PM.parse_matpower(file), N_partition)
+metis_cluster(file::String, N_partition, alg=:KWAY) = metis_cluster(PM.parse_matpower(file), N_partition, alg)

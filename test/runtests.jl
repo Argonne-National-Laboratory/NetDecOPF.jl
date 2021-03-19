@@ -12,7 +12,7 @@ file = "../examples/case5.m"
 data = parse_file(file)
 
 # Partition network
-partitions = metis_cluster(file, 2)
+partitions = metis_cluster(data, 2)
 
 dn_model = decompose(data, partitions, ACRPowerModel, NetDecOPF.build_acopf_with_free_lines)
 # dn_model = decompose(data, partitions, W_ACRModel, NetDecOPF.build_acopf_with_free_lines)
