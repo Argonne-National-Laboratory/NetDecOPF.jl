@@ -1,7 +1,7 @@
 name = "NetDecOPF"
 uuid = "7e11003c-6902-4de6-b30c-de11577d87f1"
 authors = ["Weiqi Zhang <wzhang483@wisc.edu>", "Kibaek Kim <kimk@anl.gov>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 BundleMethod = "e8a6717a-069f-43d5-9ac2-a49b1ec5be7b"
