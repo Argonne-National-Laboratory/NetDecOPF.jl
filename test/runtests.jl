@@ -15,7 +15,7 @@ data = parse_file(file)
 partitions = metis_cluster(file, 2)
 
 dn_model = decompose(data, partitions, ACRPowerModel, NetDecOPF.build_acopf_with_free_lines)
-# dn_model = decompose(data, partitions, SOCBFPowerModel, NetDecOPF.build_socbf_with_free_lines)
+# dn_model = decompose(data, partitions, W_ACRModel, NetDecOPF.build_acopf_with_free_lines)
 
 algo = init_DD_algo(dn_model)
 set_subnet_optimizer!(dn_model, sub_optimizer)
@@ -30,5 +30,5 @@ LM = DD.BundleMaster(BM.ProximalMethod, optimizer, params)
 
 DD.run!(algo, LM)
 
-@test isapprox(DD.dual_objective_value(algo), 17751, rtol = 0.1)
+@test isapprox(DD.dual_objective_value(algo), 17551, rtol = 0.1)
 # @show DD.dual_solution(algo)
