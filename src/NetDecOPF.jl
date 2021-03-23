@@ -31,6 +31,6 @@ export metis_cluster
 
 include("prob_ext.jl")
 
-export W_ACRModel, WU_ACRModel
+export W_ACRModel, WU_ACRModel, Large_W_ACRModel
 
 end # module
