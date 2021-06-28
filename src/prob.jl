@@ -398,8 +398,9 @@ function collect_split_vars(pm::PM.ACRPowerModel)
 end
 
 function collect_split_vars(pm::PM.AbstractWRModel)
-    wr = PM.var(pm, :wr)
-    wi = PM.var(pm, :wi)
+    # wr = PM.var(pm, :wr)
+    # wi = PM.var(pm, :wi)
+    # w  = PM.var(pm,  :w)
     p  = PM.var(pm,  :p)
     q  = PM.var(pm,  :q)
 

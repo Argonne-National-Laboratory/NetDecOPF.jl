@@ -134,7 +134,10 @@ function ref_add_global_bus!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     end
     for (nw, nw_ref) in ref[:it][:pm][:nw]
         nw_ref[:all_bus] = Dict(j["bus_i"] => j for (_, j) in data["bus"])
-        nw_ref[:all_branch] = Dict{Int, Any}(parse(Int, k) => v for (k,v) in data["branch"] if v["br_status"] != PM.pm_component_status_inactive["branch"])
+        nw_ref[:all_branch] = Dict{Int, Any}(parse(Int, k) => v for (k,v) in data["branch"])
         nw_ref[:all_buspairs] = calc_all_buspair_parameters(nw_ref[:all_bus], nw_ref[:all_branch], nw_ref[:conductor_ids], haskey(nw_ref, :conductors))
+        nw_ref[:all_arcs_from] = [(i,branch["f_bus"],branch["t_bus"]) for (i,branch) in nw_ref[:all_branch]]
+        nw_ref[:all_arcs_to]   = [(i,branch["t_bus"],branch["f_bus"]) for (i,branch) in nw_ref[:all_branch]]
+        nw_ref[:all_arcs] = [nw_ref[:all_arcs_from]; nw_ref[:all_arcs_to]]
     end
 end
