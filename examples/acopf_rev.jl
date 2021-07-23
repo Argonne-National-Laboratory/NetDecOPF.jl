@@ -2,13 +2,10 @@ using PowerModels
 using NetDecOPF
 using DualDecomposition
 using Ipopt, KNITRO
-using Mosek, MosekTools
 using JuMP
 using BundleMethod
 const DD = DualDecomposition
 const PM = PowerModels
-using JLD, HDF5
-using COSMO
 using OSQP
 
 PowerModels.silence()
