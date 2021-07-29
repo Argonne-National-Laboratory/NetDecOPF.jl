@@ -1,15 +1,26 @@
+using Revise
+
 using PowerModels
 using NetDecOPF
 using DualDecomposition
-using Ipopt, KNITRO
-using JuMP
 using BundleMethod
+
 const DD = DualDecomposition
-const PM = PowerModels
+
+using Ipopt
+# using KNITRO
+using filterSQP
+using AmplNLWriter
+# using JuMP
 using OSQP
 
 PowerModels.silence()
-sub_optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 1, "warm_start_init_point" => "yes", "linear_solver" => "ma27")
+sub_optimizer = optimizer_with_attributes(filterSQP.Optimizer, "use_warm_start" => false, "eps" => 1e-4)
+# sub_optimizer = optimizer_with_attributes(
+#     () -> AmplNLWriter.Optimizer("/Users/kibaekkim/Documents/REPOS/filterSQP/build/bin/amplfilter"), 
+#     "iprint" => 1,
+#     "eps" => 1e-4)
+# sub_optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 1, "warm_start_init_point" => "yes", "linear_solver" => "ma27")
 # sub_optimizer = optimizer_with_attributes(KNITRO.Optimizer, "outlev" => 0, "algorithm" => 4, "par_numthreads" => 1, "strat_warm_start" => 1)
 # sub_optimizer = optimizer_with_attributes(KNITRO.Optimizer, "outlev" => 1, "strat_warm_start" => 1)
 optimizer = optimizer_with_attributes(OSQP.Optimizer, "verbose" => false)
