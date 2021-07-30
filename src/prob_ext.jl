@@ -317,27 +317,27 @@ function build_acopf_with_free_lines(pm::W_global_ACRModel)
         JuMP.set_upper_bound(vi[i],  bus["vmax"])
     end
 
-    w = PM.var(pm, :w)
-    for (i, bus) in PM.ref(pm, nw, :all_bus)
-        JuMP.@constraint(pm.model, w[i] == vr[i]^2 + vi[i]^2)
-    end
-
-    wr = PM.var(pm, :wr)
-    wi = PM.var(pm, :wi)
-    for (i,j) in PM.ids(pm, :all_buspairs)
-        JuMP.@constraint(pm.model, wr[(i,j)] == vr[i] * vr[j] + vi[i] * vi[j])
-        JuMP.@constraint(pm.model, wi[(i,j)] == vi[i] * vr[j] - vr[i] * vi[j])
-    end
-    # WR = PM.var(pm, :WR)
-    # WI = PM.var(pm, :WI)
-    # for i in keys(pm.data["widx_to_bus"]), j in keys(pm.data["widx_to_bus"])
-    #     b_i_index = pm.data["widx_to_bus"][i]
-    #     b_j_index = pm.data["widx_to_bus"][j]
-    #     JuMP.@constraint(pm.model, WI[i,j] == vi[b_i_index] * vr[b_j_index] - vr[b_i_index] * vi[b_j_index])
-    #     if i <= j
-    #         JuMP.@constraint(pm.model, WR[i,j] == vr[b_i_index] * vr[b_j_index] + vi[b_i_index] * vi[b_j_index])
-    #     end
+    # w = PM.var(pm, :w)
+    # for (i, bus) in PM.ref(pm, nw, :all_bus)
+    #     JuMP.@constraint(pm.model, w[i] == vr[i]^2 + vi[i]^2)
     # end
+
+    # wr = PM.var(pm, :wr)
+    # wi = PM.var(pm, :wi)
+    # for (i,j) in PM.ids(pm, :all_buspairs)
+    #     JuMP.@constraint(pm.model, wr[(i,j)] == vr[i] * vr[j] + vi[i] * vi[j])
+    #     JuMP.@constraint(pm.model, wi[(i,j)] == vi[i] * vr[j] - vr[i] * vi[j])
+    # end
+    WR = PM.var(pm, :WR)
+    WI = PM.var(pm, :WI)
+    for i in keys(pm.data["widx_to_bus"]), j in keys(pm.data["widx_to_bus"])
+        b_i_index = pm.data["widx_to_bus"][i]
+        b_j_index = pm.data["widx_to_bus"][j]
+        JuMP.@constraint(pm.model, WI[i,j] == vi[b_i_index] * vr[b_j_index] - vr[b_i_index] * vi[b_j_index])
+        if i <= j
+            JuMP.@constraint(pm.model, WR[i,j] == vr[b_i_index] * vr[b_j_index] + vi[b_i_index] * vi[b_j_index])
+        end
+    end
 end
 
 # function collect_split_vars(pm::W_global_ACRModel)
