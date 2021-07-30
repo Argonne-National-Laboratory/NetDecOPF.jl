@@ -13,7 +13,7 @@ const DD = DualDecomposition
 const parallel = DD.parallel
 const BM = BundleMethod
 
-function main(file, npartitions::Int, log_path)
+function main(file, npartitions::Int, log_path; max_iter = 3000)
     parallel.init()
 
     if parallel.is_root()
@@ -49,10 +49,18 @@ function main(file, npartitions::Int, log_path)
         push!(my_partitions, partitions[s])
     end
 
+    stime = time()
+
     dn_model = decompose(data, my_partitions, W_global_ACRModel, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
-    # dn_model = decompose(data, my_partitions, W_ACRModel_V,      NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
+    # dn_model = decompose(data, my_partitions, W_ACRModel_V, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
     models = Dict{Int, JuMP.Model}(my_sub_index[i] => dn_model.model_list[i].model for i in eachindex(my_sub_index))
     subproblem_dims = Dict{Int,Tuple{Int,Int}}()
+
+    if parallel.is_root()
+        println("decompose(): $(time()-stime) sec.")
+    end
+
+    stime = time()
 
     algo = DD.LagrangeDual()
     for s in my_sub_index
@@ -86,37 +94,48 @@ function main(file, npartitions::Int, log_path)
     end
     DD.set_coupling_variables!(algo, coupling_variables)
 
+    if parallel.is_root()
+        println("Initialize Lagrangian dual: $(time()-stime) sec.")
+    end
+
     suboptimizer = optimizer_with_attributes(
         Ipopt.Optimizer, 
         "print_level" => 0, 
         "warm_start_init_point" => "yes", 
         "tol" => 1e-4,
-        # "linear_solver" => "ma27",
+        "linear_solver" => "ma27",
     )
 
     # Lagrange master method
-    # LM = initialize_subgradient_method()
-    LM = initialize_bundle_method()
-
-    # Warmup solvers
-    dummy_model = JuMP.Model()
-    @variable(dummy_model, 0 <= x <= 1)
-    @objective(dummy_model, Min, (x-0.5)^2)
-    set_optimizer(dummy_model, suboptimizer)
-    optimize!(dummy_model)
+    # LM = initialize_subgradient_method(;max_iter = max_iter)
+    LM = initialize_bundle_method(;max_iter = max_iter)
 
     for pm in dn_model.model_list
         m = pm.model
-        # NOTE: This does not work with ipopt+mumps.
+        # NOTE: This does not work with ipopt.
         # for v in JuMP.all_variables(m)
         #     if JuMP.has_lower_bound(v) && JuMP.has_upper_bound(v)
         #         JuMP.set_start_value(v, (JuMP.lower_bound(v) + JuMP.upper_bound(v)) / 2)
         #     end
         # end
         set_optimizer(m, suboptimizer)
+        # if parallel.is_root()
+        #     set_optimizer_attribute(m, "print_level", 5)
+        # end
     end
 
     parallel.barrier()
+
+    # Warm up
+    BM.set_parameter(LM.params, "maxiter", 2)
+    DD.run!(algo, LM)
+    algo.subsolve_time = []
+    algo.subcomm_time = []
+    algo.subobj_value = []
+    algo.master_time = []
+
+    # actual run
+    BM.set_parameter(LM.params, "maxiter", max_iter)
     DD.run!(algo, LM)
 
     # Write timing outputs to files
@@ -130,9 +149,9 @@ function main(file, npartitions::Int, log_path)
     parallel.finalize()
 end
 
-function initialize_subgradient_method() 
+function initialize_subgradient_method(;max_iter = max_iter) 
     LM = DD.SubgradientMaster()
-    LM.maxiter = 300
+    LM.maxiter = max_iter
     LM.α = 0.0001
     # LM.step_size = (method) -> (LM.α / norm(method.∇f)) # constant step length
     LM.step_size = (method) -> (LM.α / method.iter) # square summable
@@ -140,23 +159,14 @@ function initialize_subgradient_method()
     return LM
 end
 
-function initialize_bundle_method()
+function initialize_bundle_method(;max_iter = max_iter)
     # optimizer = optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_SCRIND" => 0, "CPX_PARAM_QPMETHOD" => 2)
-    # optimizer = optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_SCRIND" => 0, "CPX_PARAM_QPMETHOD" => 4)
     # optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0, "warm_start_init_point" => "yes")
     optimizer = optimizer_with_attributes(OSQP.Optimizer, "verbose" => false, "linsys_solver" => "mkl pardiso")
-    # optimizer = optimizer_with_attributes(OSQP.MathOptInterfaceOSQP.Optimizer, "verbose" => false)
-
-    # Warmup solvers
-    dummy_model = JuMP.Model()
-    @variable(dummy_model, 0 <= x <= 1)
-    @objective(dummy_model, Min, (x-0.5)^2)
-    set_optimizer(dummy_model, optimizer)
-    optimize!(dummy_model)
 
     # Change parameters
     params = BM.Parameters()
-    BM.set_parameter(params, "maxiter", 3000)
+    BM.set_parameter(params, "maxiter", max_iter)
     BM.set_parameter(params, "ϵ_s", 1.e-4)
     BM.set_parameter(params, "ncuts_per_iter", npartitions)
 
@@ -175,7 +185,9 @@ catch BoundsError
 end
 
 # file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case5_pjm.m"
+# file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case118_ieee.m"
 # npartitions = 2
 # log_path = pwd()
 
-main(file, npartitions, log_path)
+main(file, npartitions, log_path,
+    max_iter = 3000)
