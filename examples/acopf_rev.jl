@@ -26,7 +26,17 @@ partitions = [[bus["bus_i"]] for (_,bus) in data["bus"]]
 dn_model = decompose(data, partitions, W_global_ACRModel, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
 
 # This is decomposing with vr and vi as consensus
-dn_model = decompose(data, partitions, W_ACRModel_V, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
+# dn_model = decompose(data, partitions, W_ACRModel_V, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
+
+# initialization
+for pm in dn_model.model_list
+    m = pm.model
+    for v in JuMP.all_variables(m)
+        if JuMP.has_lower_bound(v) && JuMP.has_upper_bound(v)
+            JuMP.set_start_value(v, (JuMP.lower_bound(v) + JuMP.upper_bound(v)) / 2)
+        end
+    end
+end
 
 algo = init_DD_algo(dn_model)
 set_subnet_optimizer!(dn_model, sub_optimizer)
