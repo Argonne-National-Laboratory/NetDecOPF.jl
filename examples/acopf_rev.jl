@@ -9,8 +9,8 @@ const DD = DualDecomposition
 
 using Ipopt
 # using KNITRO
-using filterSQP
-using AmplNLWriter
+# using filterSQP
+# using AmplNLWriter
 # using JuMP
 using OSQP
 
