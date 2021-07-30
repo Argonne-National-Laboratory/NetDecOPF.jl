@@ -6,12 +6,6 @@ git-tree-sha1 = "370cafc70604b2522f2c7cf9915ebcd17b4cd38b"
 uuid = "ae81ac8f-d209-56e5-92de-9978fef736f9"
 version = "0.1.2+0"
 
-[[AmplNLWriter]]
-deps = ["MathOptInterface"]
-git-tree-sha1 = "da96916a79b3b7ee5665fa382c4dc448e97324e8"
-uuid = "7c4d4715-977e-5154-bfe0-e096adeac482"
-version = "0.7.2"
-
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
@@ -71,9 +65,9 @@ version = "1.0.2"
 
 [[CodeTracking]]
 deps = ["InteractiveUtils", "UUIDs"]
-git-tree-sha1 = "8ad457cfeb0bca98732c97958ef81000a543e73e"
+git-tree-sha1 = "9aa8a5ebb6b5bf469a7e0e2b5202cf6f8c291104"
 uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
-version = "1.0.5"
+version = "1.0.6"
 
 [[CodecBzip2]]
 deps = ["Bzip2_jll", "Libdl", "TranscodingStreams"]
@@ -151,9 +145,11 @@ uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
 [[DualDecomposition]]
 deps = ["BundleMethod", "JuMP", "LinearAlgebra", "MPI", "Printf", "SparseArrays"]
-git-tree-sha1 = "5753a6e3f2b031dfe5fcf60b9cfee344fb908149"
+git-tree-sha1 = "3fee140fc5ee6e1ead2f1bdd62aa0be4c0667ab0"
+repo-rev = "kkim/refactor"
+repo-url = "https://github.com/kibaekkim/DualDecomposition.jl.git"
 uuid = "d0e446f1-e135-48f1-a6ea-e9a6190f2a7a"
-version = "0.2.1"
+version = "0.3.1"
 
 [[ExprTools]]
 git-tree-sha1 = "b7e3d17636b348f005f11040025ae8c6f645fe92"
@@ -401,9 +397,9 @@ version = "0.2.20"
 
 [[NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
-git-tree-sha1 = "50608f411a1e178e0129eab4110bd56efd08816f"
+git-tree-sha1 = "144bab5b1443545bc4e791536c9f1eacb4eed06a"
 uuid = "d41bc354-129a-5804-8e4c-c37616107c6c"
-version = "7.8.0"
+version = "7.8.1"
 
 [[NLsolve]]
 deps = ["Distances", "LineSearches", "LinearAlgebra", "NLSolversBase", "Printf", "Reexport"]
@@ -628,12 +624,6 @@ version = "0.9.3"
 [[Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-
-[[filterSQP]]
-deps = ["Libdl", "LinearAlgebra", "MathOptInterface", "SparseArrays"]
-path = "../filterSQP.jl"
-uuid = "f1ca9057-ba27-4701-aaf7-0436ee83bb57"
-version = "0.1.0"
 
 [[nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
