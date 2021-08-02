@@ -29,8 +29,13 @@ export init_DD_algo, add_split_vars_to_algo!
 
 export metis_cluster
 
-include("prob_ext.jl")
+include("PM/ACR/Large_W_ACRModel.jl")
+include("PM/WR/W_ACRModel.jl")
+include("PM/WR/WU_ACRModel.jl")
+include("PM/WR/W_global_ACRModel.jl")
+include("PM/WR/W_ACRModel_V.jl")
+include("PM/WR/NonconvexWRModel.jl")
 
-export W_ACRModel, WU_ACRModel, Large_W_ACRModel, W_global_ACRModel, W_ACRModel_V
+export W_ACRModel, WU_ACRModel, Large_W_ACRModel, W_global_ACRModel, W_ACRModel_V, NonconvexACRModel
 
 end # module
