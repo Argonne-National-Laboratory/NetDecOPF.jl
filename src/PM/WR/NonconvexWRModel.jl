@@ -9,6 +9,8 @@ function PM.constraint_model_voltage(pm::NonconvexACRModel, n::Int)
 
     for (i,j) in PM.ids(pm, n, :buspairs)
         JuMP.@constraint(pm.model, wr[(i,j)]^2 + wi[(i,j)]^2 == w[i] * w[j])
+        # QC relaxation
+        # PM._IM.relaxation_complex_product(pm.model, w[i], w[j], wr[(i,j)], wi[(i,j)])
     end
 end
 
