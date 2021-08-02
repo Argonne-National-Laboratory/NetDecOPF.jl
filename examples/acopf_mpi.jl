@@ -3,6 +3,7 @@ using NetDecOPF
 using DualDecomposition
 using BundleMethod
 using Ipopt
+using CPLEX
 using OSQP
 using JuMP
 using LinearAlgebra
@@ -160,9 +161,17 @@ function initialize_subgradient_method(;max_iter = max_iter)
 end
 
 function initialize_bundle_method(;max_iter = max_iter)
-    # optimizer = optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_SCRIND" => 0, "CPX_PARAM_QPMETHOD" => 2)
     # optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0, "warm_start_init_point" => "yes")
-    optimizer = optimizer_with_attributes(OSQP.Optimizer, "verbose" => false, "linsys_solver" => "mkl pardiso")
+    # optimizer = optimizer_with_attributes(
+    #     CPLEX.Optimizer, 
+    #     "CPX_PARAM_SCRIND" => 1, 
+    #     "CPX_PARAM_QPMETHOD" => 2
+    # )
+    optimizer = optimizer_with_attributes(
+        OSQP.Optimizer, 
+        "verbose" => true, 
+        "linsys_solver" => "mkl pardiso",
+    )
 
     # Change parameters
     params = BM.Parameters()
@@ -185,7 +194,6 @@ catch BoundsError
 end
 
 # file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case5_pjm.m"
-# file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case118_ieee.m"
 # npartitions = 2
 # log_path = pwd()
 
