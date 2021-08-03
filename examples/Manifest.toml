@@ -150,8 +150,8 @@ uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
 [[DualDecomposition]]
 deps = ["BundleMethod", "JuMP", "LinearAlgebra", "MPI", "Printf", "SparseArrays"]
-git-tree-sha1 = "3fee140fc5ee6e1ead2f1bdd62aa0be4c0667ab0"
-repo-rev = "kkim/refactor"
+git-tree-sha1 = "71333f95cdbe0762617c771078911942420006ed"
+repo-rev = "reoptimize"
 repo-url = "https://github.com/kibaekkim/DualDecomposition.jl.git"
 uuid = "d0e446f1-e135-48f1-a6ea-e9a6190f2a7a"
 version = "0.3.1"
