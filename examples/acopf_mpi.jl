@@ -7,6 +7,7 @@ using CPLEX
 using OSQP
 using JuMP
 using LinearAlgebra
+using SCS
 
 PowerModels.silence()
 
@@ -54,6 +55,8 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
 
     dn_model = decompose(data, my_partitions, W_global_ACRModel, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
     # dn_model = decompose(data, my_partitions, W_ACRModel_V, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
+    dn_model = decompose(data, my_partitions, SparseSDPWRMPowerModel, NetDecOPF.build_acopf_with_free_lines)
+
     models = Dict{Int, JuMP.Model}(my_sub_index[i] => dn_model.model_list[i].model for i in eachindex(my_sub_index))
     subproblem_dims = Dict{Int,Tuple{Int,Int}}()
 
@@ -99,12 +102,21 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
         println("Initialize Lagrangian dual: $(time()-stime) sec.")
     end
 
+    # suboptimizer = optimizer_with_attributes(
+    #     Ipopt.Optimizer, 
+    #     "print_level" => 0, 
+    #     "warm_start_init_point" => "yes", 
+    #     "tol" => 1e-4,
+    #     "linear_solver" => "ma27",
+    # )
     suboptimizer = optimizer_with_attributes(
-        Ipopt.Optimizer, 
-        "print_level" => 0, 
-        "warm_start_init_point" => "yes", 
-        "tol" => 1e-4,
-        "linear_solver" => "ma27",
+        SCS.Optimizer, 
+        "verbose" => 0, 
+        "eps" => 1e-3, 
+        "alpha" => 1.8, 
+        "warm_start" => true, 
+        "linear_solver" => SCS.DirectSolver, 
+        "acceleration_lookback" => 50
     )
 
     # Lagrange master method
