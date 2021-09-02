@@ -7,8 +7,9 @@ using CPLEX
 using OSQP
 using JuMP
 using LinearAlgebra
+
+# using CUDA_jll
 using SCS
-using COSMO
 
 PowerModels.silence()
 
@@ -110,18 +111,16 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
     #     "tol" => 1e-4,
     #     "linear_solver" => "ma27",
     # )
-    # suboptimizer = optimizer_with_attributes(
-    #     SCS.Optimizer, 
-    #     "verbose" => 0, 
-    #     "eps" => 1e-3, 
-    #     "alpha" => 1.8, 
-    #     "warm_start" => true, 
-    #     "linear_solver" => SCS.DirectSolver, 
-    #     "acceleration_lookback" => 50
-    # )
     suboptimizer = optimizer_with_attributes(
-        COSMO.Optimizer, 
-        "verbose" => true,
+        SCS.Optimizer, 
+        "verbose" => 0, 
+        "eps" => 1e-3, 
+        "alpha" => 1.8,
+        "max_iters" => 50000,
+        "warm_start" => true, 
+        "linear_solver" => SCS.DirectSolver, 
+        # "linear_solver" => SCS.GpuIndirectSolver,
+        "acceleration_lookback" => 50
     )
 
     # Lagrange master method
@@ -138,7 +137,7 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
         # end
         set_optimizer(m, suboptimizer)
         # if parallel.is_root()
-        #     set_optimizer_attribute(m, "print_level", 5)
+            # set_optimizer_attribute(m, "verbose", 1)
         # end
     end
 
@@ -211,7 +210,7 @@ end
 # end
 
 file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case300_ieee.m"
-npartitions = 4
+npartitions = 2
 log_path = pwd()
 
 main(file, npartitions, log_path,
