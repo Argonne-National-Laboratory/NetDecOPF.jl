@@ -23,9 +23,9 @@ function decompose(
     models = T[]
     shared_vars_dict = Dict{Int64, Dict}()
     denet_refs = [ref_add_cut_bus!, ref_add_cut_branch!]
-    if T <: PM.AbstractWRMModel
-        push!(denet_refs, ref_add_global_bus!)
-    end
+    # if T <: PM.AbstractWRMModel
+    #     push!(denet_refs, ref_add_global_bus!)
+    # end
     for i in eachindex(N_gs)
         N_g = N_gs[i]
         sub_data = generate_subnet_data(data, N_g)

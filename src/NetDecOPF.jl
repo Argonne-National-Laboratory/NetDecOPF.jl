@@ -36,7 +36,8 @@ include("PM/WR/W_global_ACRModel.jl")
 include("PM/WR/W_ACRModel_V.jl")
 include("PM/WR/NonconvexWRModel.jl")
 include("PM/WRM/SparseSDPWRMPowerModel.jl")
+include("PM/WRM/RelaxedSDPWRMPowerModel.jl")
 
-export W_ACRModel, WU_ACRModel, Large_W_ACRModel, W_global_ACRModel, W_ACRModel_V, NonconvexACRModel
+export W_ACRModel, WU_ACRModel, Large_W_ACRModel, W_global_ACRModel, W_ACRModel_V, NonconvexACRModel, RelaxedSDPWRMPowerModel
 
 end # module
