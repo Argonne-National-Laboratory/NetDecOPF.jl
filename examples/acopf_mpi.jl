@@ -7,6 +7,8 @@ using CPLEX
 using OSQP
 using JuMP
 using LinearAlgebra
+
+# using CUDA_jll
 using SCS
 
 PowerModels.silence()
@@ -53,7 +55,7 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
 
     stime = time()
 
-    dn_model = decompose(data, my_partitions, W_global_ACRModel, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
+    # dn_model = decompose(data, my_partitions, W_global_ACRModel, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
     # dn_model = decompose(data, my_partitions, W_ACRModel_V, NetDecOPF.build_acopf_with_free_lines, extra_ref_extensions=[NetDecOPF.ref_add_global_bus!])
     dn_model = decompose(data, my_partitions, SparseSDPWRMPowerModel, NetDecOPF.build_acopf_with_free_lines)
 
@@ -113,9 +115,11 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
         SCS.Optimizer, 
         "verbose" => 0, 
         "eps" => 1e-3, 
-        "alpha" => 1.8, 
+        "alpha" => 1.8,
+        "max_iters" => 50000,
         "warm_start" => true, 
         "linear_solver" => SCS.DirectSolver, 
+        # "linear_solver" => SCS.GpuIndirectSolver,
         "acceleration_lookback" => 50
     )
 
@@ -133,7 +137,7 @@ function main(file, npartitions::Int, log_path; max_iter = 3000)
         # end
         set_optimizer(m, suboptimizer)
         # if parallel.is_root()
-        #     set_optimizer_attribute(m, "print_level", 5)
+            # set_optimizer_attribute(m, "verbose", 1)
         # end
     end
 
@@ -181,7 +185,7 @@ function initialize_bundle_method(;max_iter = max_iter)
     # )
     optimizer = optimizer_with_attributes(
         OSQP.Optimizer, 
-        "verbose" => true, 
+        "verbose" => false, 
         "linsys_solver" => "mkl pardiso",
     )
 
@@ -196,18 +200,18 @@ function initialize_bundle_method(;max_iter = max_iter)
     # return DD.BundleMaster(BM.TrustRegionMethod, optimizer, params)
 end
 
-file = ARGS[1]
-npartitions = parse(Int, ARGS[2])
-log_path = ""
-try 
-    global log_path = ARGS[3]
-catch BoundsError
-    global log_path = pwd()
-end
+# file = ARGS[1]
+# npartitions = parse(Int, ARGS[2])
+# log_path = ""
+# try 
+#     global log_path = ARGS[3]
+# catch BoundsError
+#     global log_path = pwd()
+# end
 
-# file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case5_pjm.m"
-# npartitions = 2
-# log_path = pwd()
+file = "/home/kimk/REPOS/pglib-opf/pglib_opf_case300_ieee.m"
+npartitions = 2
+log_path = pwd()
 
 main(file, npartitions, log_path,
     max_iter = 3000)
